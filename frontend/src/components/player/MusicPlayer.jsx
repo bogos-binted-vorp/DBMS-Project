@@ -75,6 +75,7 @@ export default function MusicPlayer() {
     const trackId = currentTrack.track_id
     const videoId = currentTrack.youtube_video_id
     let player = null
+    let playerElement = null
     let progressTimer = null
     let listenedSeconds = 0
     let lastVideoTime = null
@@ -142,9 +143,17 @@ export default function MusicPlayer() {
 
     loadYouTubeIframeApi()
       .then((YT) => {
-        if (!active || !playerHostRef.current) return
+        const host = playerHostRef.current
+        if (!active || !host) return
 
-        player = new YT.Player(playerHostRef.current, {
+        // Give the YouTube IFrame API a dedicated element. React owns the
+        // host only; YouTube may freely replace/manipulate this child.
+        playerElement = document.createElement('div')
+        playerElement.style.width = '100%'
+        playerElement.style.height = '100%'
+        host.replaceChildren(playerElement)
+
+        player = new YT.Player(playerElement, {
           width: '250',
           height: '141',
           videoId,
@@ -200,6 +209,9 @@ export default function MusicPlayer() {
         try { player.destroy() } catch (error) { console.warn('Could not destroy YouTube player:', error) }
       }
       if (youtubePlayerRef.current === player) youtubePlayerRef.current = null
+      // Use the element's own remove() rather than asking React to remove
+      // a node that the YouTube API may already have replaced.
+      playerElement?.remove()
     }
   }, [
     currentTrack?.track_id,
@@ -281,7 +293,6 @@ export default function MusicPlayer() {
             pointerEvents: playerCollapsed ? 'none' : 'auto',
           }}>
             <div
-              key={currentTrack.youtube_video_id}
               ref={playerHostRef}
               style={{ width: '100%', height: '100%' }}
             />
