@@ -14,8 +14,14 @@ const playlistsRouter = require('./routes/playlists');
 
 const app = express();
 
+// Support comma-separated FRONTEND_URL for multiple allowed origins
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
   credentials: true,
 }));
 app.use(express.json({ limit: '1mb' }));
